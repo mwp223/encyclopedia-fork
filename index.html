@@ -634,7 +634,8 @@ select:focus, input:focus, textarea:focus {
     <option value="Gemini">Gemini</option>
     <option value="Groq">Groq</option>
     <option value="Cloudflare">Cloudflare</option>
-    <option value="Encyclopedia AI">Encyclopedia AI</option>
+    <option value="Encyclopedia AI">Encyclopedia AI (widget)</option>
+    <option value="Encyclopedia Pipe">Encyclopedia Pipe (direct)</option>
   </select>
 
   <div class="section-label" id="modelLabel">Model</div>
@@ -2038,20 +2039,28 @@ async function sendMessage() {
 
     $("sendButton").textContent = "Thinking...";
 
+    const isPipe = provider === "Encyclopedia Pipe";
+
     const response = await fetch(
-      "/api/chat",
+      isPipe ? "/api/elfsight" : "/api/chat",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "Accept": "application/json"
         },
-        body: JSON.stringify({
-          provider,
-          model,
-          messages: chat.messages,
-          systemInstruction: getSystemInstruction()
-        })
+        body: isPipe
+          ? JSON.stringify({
+              message: displayText,
+              pageUrl: location.href,
+              pageTitle: document.title
+            })
+          : JSON.stringify({
+              provider,
+              model,
+              messages: chat.messages,
+              systemInstruction: getSystemInstruction()
+            })
       }
     );
 
