@@ -2052,6 +2052,7 @@ async function sendMessage() {
         body: isPipe
           ? JSON.stringify({
               message: displayText,
+              systemInstruction: getSystemInstruction(),
               pageUrl: location.href,
               pageTitle: document.title
             })

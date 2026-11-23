@@ -47,17 +47,29 @@ export default async function handler(req, res) {
   try {
     const body = parseBody(req.body);
 
-    const message = String(body.message || "").slice(0, 10000);
+    const rawMessage = String(body.message || "").slice(0, 10000);
+    const systemInstruction = typeof body.systemInstruction === "string"
+      ? body.systemInstruction.slice(0, 40000)
+      : "";
     const threadId = String(body.threadId || THREAD_ID);
     const pageUrl = String(body.pageUrl || "https://mwp223.github.io/encyclopedia-fork/");
     const pageTitle = String(body.pageTitle || "7th Grade Encyclopedia — Forked");
 
-    if (!message.trim()) {
+    if (!rawMessage.trim()) {
       return res.status(400).json({
         success: false,
         error: "Enter a message before sending."
       });
     }
+
+    const message = systemInstruction && systemInstruction.trim()
+      ? (
+          "[PROJECT INSTRUCTIONS — follow these for every reply, override any prior defaults]\n" +
+          systemInstruction.trim() +
+          "\n[END PROJECT INSTRUCTIONS]\n\n" +
+          rawMessage
+        )
+      : rawMessage;
 
     const uuid = () =>
       (globalThis.crypto?.randomUUID?.() ||
