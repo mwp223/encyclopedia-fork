@@ -116,16 +116,19 @@ function geminiContents(messages) {
   });
 }
 
-function groqMessages(messages, model) {
+function groqMessages(messages, model, systemInstruction) {
   const supportsImages =
     model === "qwen/qwen3.8-27b";
 
   const output = [{
     role: "system",
-    content:
-      "You are an AI assistant in AI Service. " +
-      "Be helpful, accurate, clear, and natural. " +
-      "Use Markdown when it improves readability."
+    content: systemInstruction && systemInstruction.trim()
+      ? String(systemInstruction).slice(0, 50000)
+      : (
+          "You are an AI assistant in AI Service. " +
+          "Be helpful, accurate, clear, and natural. " +
+          "Use Markdown when it improves readability."
+        )
   }];
 
   for (const message of messages) {
@@ -188,13 +191,16 @@ function groqMessages(messages, model) {
   return output;
 }
 
-function cloudflareMessages(messages) {
+function cloudflareMessages(messages, systemInstruction) {
   const output = [{
     role: "system",
-    content:
-      "You are an AI assistant in AI Service. " +
-      "Be helpful, accurate, clear, and natural. " +
-      "Use Markdown when it improves readability."
+    content: systemInstruction && systemInstruction.trim()
+      ? String(systemInstruction).slice(0, 50000)
+      : (
+          "You are an AI assistant in AI Service. " +
+          "Be helpful, accurate, clear, and natural. " +
+          "Use Markdown when it improves readability."
+        )
   }];
 
   for (const message of messages) {
@@ -306,6 +312,10 @@ export default async function handler(req, res) {
 
     const messages = normalizeMessages(body.messages);
 
+    const systemInstruction = typeof body.systemInstruction === "string"
+      ? body.systemInstruction
+      : "";
+
     if (
       !messages.length ||
       !messages.some(message => message.role === "user")
@@ -356,12 +366,15 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             systemInstruction: {
               parts: [{
-                text:
-                  `You are an AI assistant in AI Service. ` +
-                  `The selected profile is ${profileName}. ` +
-                  `If asked which profile is selected, use that exact profile name. ` +
-                  `Be helpful, accurate, clear, and natural. ` +
-                  `Use Markdown when useful.`
+                text: systemInstruction && systemInstruction.trim()
+                  ? String(systemInstruction).slice(0, 50000)
+                  : (
+                      `You are an AI assistant in AI Service. ` +
+                      `The selected profile is ${profileName}. ` +
+                      `If asked which profile is selected, use that exact profile name. ` +
+                      `Be helpful, accurate, clear, and natural. ` +
+                      `Use Markdown when useful.`
+                    )
               }]
             },
             contents: geminiContents(messages),
@@ -437,7 +450,7 @@ export default async function handler(req, res) {
           },
           body: JSON.stringify({
             model,
-            messages: groqMessages(messages, model),
+            messages: groqMessages(messages, model, systemInstruction),
             temperature: 0.7,
             max_tokens: 4096
           })
@@ -503,7 +516,7 @@ export default async function handler(req, res) {
             "Accept": "application/json"
           },
           body: JSON.stringify({
-            messages: cloudflareMessages(messages),
+            messages: cloudflareMessages(messages, systemInstruction),
             temperature: 0.7,
             max_tokens: 4096
           })

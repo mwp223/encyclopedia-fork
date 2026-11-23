@@ -4,7 +4,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Service</title>
+<title>7th Grade Encyclopedia — Forked</title>
 
 <script>
 window.MathJax = {
@@ -622,7 +622,7 @@ select:focus, input:focus, textarea:focus {
 
 <aside class="sidebar">
 
-  <div class="brand">AI <span>Service</span></div>
+  <div class="brand">Encyclopedia <span>Fork</span></div>
 
   <button class="primary" onclick="newChat()">
     + New Chat
@@ -642,6 +642,20 @@ select:focus, input:focus, textarea:focus {
   <select id="model">
     <option value="gemini-3-flash">Gemini 3 Flash</option>
   </select>
+
+  <div class="section-label">Project Instructions</div>
+
+  <textarea
+    id="systemInstruction"
+    placeholder="Paste project instructions / system prompt here. Sent with every message. Overrides defaults for Gemini / Groq / Cloudflare. Not used for the embedded Encyclopedia widget."
+    style="width:100%;min-height:140px;max-height:320px;resize:vertical;background:#1a1a1a;color:#eee;border:1px solid #333;border-radius:8px;padding:8px;font:12px/1.4 system-ui,sans-serif;margin-bottom:6px;box-sizing:border-box;"
+    oninput="saveSystemInstruction()"
+  ></textarea>
+
+  <div style="display:flex;gap:6px;margin-bottom:14px;">
+    <button class="secondary" style="flex:1;" onclick="clearSystemInstruction()">Clear</button>
+    <span id="sysStatus" style="flex:1;font:11px/28px system-ui;color:#888;text-align:right;">idle</span>
+  </div>
 
   <div class="section-label">Your chats</div>
 
@@ -785,8 +799,46 @@ select:focus, input:focus, textarea:focus {
 
 <script>
 /* =========================================
-   AI SERVICE
+   AI SERVICE  (forked: project instructions)
 ========================================= */
+
+const SYSTEM_INSTRUCTION_KEY = "encyclopediaFork.systemInstruction";
+
+function getSystemInstruction() {
+  try {
+    return localStorage.getItem(SYSTEM_INSTRUCTION_KEY) || "";
+  } catch { return ""; }
+}
+
+function saveSystemInstruction() {
+  const el = document.getElementById("systemInstruction");
+  if (!el) return;
+  try {
+    localStorage.setItem(SYSTEM_INSTRUCTION_KEY, el.value);
+    const s = document.getElementById("sysStatus");
+    if (s) {
+      const n = el.value.length;
+      s.textContent = n ? ("saved · " + n + " chars") : "idle";
+      s.style.color = n ? "#6fdc6f" : "#888";
+    }
+  } catch {}
+}
+
+function clearSystemInstruction() {
+  const el = document.getElementById("systemInstruction");
+  if (el) el.value = "";
+  try { localStorage.removeItem(SYSTEM_INSTRUCTION_KEY); } catch {}
+  const s = document.getElementById("sysStatus");
+  if (s) { s.textContent = "cleared"; s.style.color = "#888"; }
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const el = document.getElementById("systemInstruction");
+  if (el) {
+    el.value = getSystemInstruction();
+    saveSystemInstruction();
+  }
+});
 
 const FALLBACK_GEMINI_MODELS = [
   { id: "gemini-3-flash", name: "Gemini 3 Flash", provider: "Gemini" },
@@ -1997,7 +2049,8 @@ async function sendMessage() {
         body: JSON.stringify({
           provider,
           model,
-          messages: chat.messages
+          messages: chat.messages,
+          systemInstruction: getSystemInstruction()
         })
       }
     );
